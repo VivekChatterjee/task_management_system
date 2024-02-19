@@ -1,42 +1,38 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate, login, logout
-from .serializers import UserSerializer, LoginSerializer
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.views import View
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+import json
 
-class RegisterAPIView(APIView):
+@method_decorator(csrf_exempt, name='dispatch')
+class LoginView(View):
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data=json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return JsonResponse({'message': 'Login successful'}, status=200)
+        else:
+            return JsonResponse({'message': 'Invalid credentials'}, status=401)
 
-class LoginAPIView(ObtainAuthToken):
-    serializer_class = LoginSerializer
-    
+class LogoutView(View):
+    def get(self, request):
+        logout(request)
+        return JsonResponse({'message': 'Logout successful'}, status=200)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class RegisterView(View):
     def post(self, request):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        # import ipdb; ipdb.set_trace()
-        user = serializer.validated_data
-        
-        # token, created = Token.objects.get_or_create(user=user)
-        return Response({'token': 'working'})
-
-class LogoutAPIView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request):
-        try:
-            # Retrieve the user's token
-            token = Token.objects.get(user=request.user)
-            # Delete the token to log out the user
-            token.delete()
-            return Response({"success": "User logged out successfully"}, status=status.HTTP_200_OK)
-        except Token.DoesNotExist:
-            # If the token doesn't exist, it's as if the user is already logged out
-            return Response({"error": "User is already logged out"}, status=status.HTTP_400_BAD_REQUEST)
+        data=json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        if not username or not password:
+            return JsonResponse({'message': 'Username and password are required'}, status=400)
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'message': 'Username already exists'}, status=409)
+        User.objects.create_user(username=username, password=password)
+        return JsonResponse({'message': 'User registered successfully'}, status=201)

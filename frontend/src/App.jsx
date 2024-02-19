@@ -1,40 +1,32 @@
 // Main component to integrate all components.
 
-import React, { useState } from "react";
-import TaskList from "./TaskList";
-import AddTaskForm from "./AddTaskForm";
-import FilterTasks from "./FilterTasks";
+import React from "react";
+
+import Login from "./Auth/Login";
+import TaskPage from "./Tasks/TaskPage";
 
 const App = () => {
-  const [tasks, setTasks] = useState([]);
-  const [filter, setFilter] = useState("All");
-
-  const handleAddTask = (newTask) => {
-    setTasks([...tasks, { id: tasks.length + 1, ...newTask }]);
-  };
-
-  const filteredTasks =
-    filter === "All" ? tasks : tasks.filter((task) => task.status === filter);
-
-  const markTasksCompleted = (taskId) => {
-    setTasks(
-      tasks.reduce((acc, cur) => {
-        if (cur.id == taskId)
-          acc.push({ id: cur.id, title: cur.title, status: "Completed" });
-        else acc.push(cur);
-        return acc;
-      }, [])
-    );
-  };
-
   return (
-    <div>
-      <h1>Task Management System</h1>
-      <AddTaskForm onAddTask={handleAddTask} />
-      <FilterTasks onFilterChange={setFilter} />
-      <TaskList tasks={filteredTasks} markCompleted={markTasksCompleted} />
-    </div>
+    <>
+      {/* <Login /> */}
+      <TaskPage />
+    </>
   );
 };
+
+// Example using socket.io-client
+import io from "socket.io-client";
+
+// const socket = io("http://localhost:8000/ws/task/");
+
+// socket.on("connect", () => {
+//   console.log("Connected to WebSocket");
+// });
+
+// socket.on("message", (data) => {
+//   console.log("Received message:", data);
+// });
+
+// socket.emit("message", "Hello from client");
 
 export default App;
